@@ -67,6 +67,23 @@
   .nisc{border-radius:50%;background:var(--nisc-bg);}
   .itembox{border-radius:6px;background:var(--itembox-bg);}
 
+.icon.item {
+  width: 32px;
+  height: 32px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+.placed.item {
+  width: 32px;
+  height: 32px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+
+
 /* マップ上のアイコンを一回り小さくし、中心基準にする */
 .placed{
   position:absolute;cursor:move;
@@ -82,7 +99,7 @@
   #legend{margin:8px;padding:8px;border-top:1px solid #eee;font-size:12px;background:rgba(255,255,255,.9)}
   .hint{font-size:11px;color:#666;margin-top:6px}
 
-  .arrow-hit{stroke:black; stroke-opacity:0; stroke-width:32;  stroke-linecap:round; pointer-events:stroke;}
+  .arrow-hit{stroke:black; stroke-opacity:0; stroke-width:32;   stroke-linecap:round; pointer-events:stroke;}
   .arrow-vis{stroke:black; stroke-width:3; pointer-events:none;}
   .arrow-group{cursor:move;}
   .start-dot{
@@ -114,6 +131,10 @@
     <h3>SC</h3><div id="sc-icons" class="icons"></div>
     <h3>NISC</h3><div id="nisc-icons" class="icons"></div>
     <h3>ItemBox</h3><div id="item-icons" class="icons"></div>
+
+<h3>Item</h3><div id="items" class="icons"></div>
+
+
     <button id="clearBtn">全削除</button>
     <button id="resetZoomBtn">1倍に戻す</button>
     <div id="legend">
@@ -201,15 +222,31 @@ mapArea.addEventListener('drop', e => {
   const type=e.dataTransfer.getData("type");
   const num =e.dataTransfer.getData("num");
   if(!type || !num) return;
-  if(mapInner.querySelector(`.placed[data-type="${type}"][data-num="${num}"]`)) return;
+
+  // ★ Item 以外は重複禁止
+  if (type !== 'item' &&
+      mapInner.querySelector(`.placed[data-type="${type}"][data-num="${num}"]`)) {
+    return;
+  }
+
   const rect=mapInner.getBoundingClientRect();
   const xp=((e.clientX-rect.left)/rect.width )*100;
   const yp=((e.clientY-rect.top )/rect.height)*100;
+
   const icon=createPlacedIcon(type,num,xp,yp);
   mapInner.appendChild(icon);
-  removeFromPalette(type,num);
+
+  // ★ Item 以外はパレットから消す
+  if (type !== 'item') {
+    removeFromPalette(type,num);
+  }
+
   saveState();
 });
+
+
+
+
 sidebar.addEventListener('dragstart',e=>{
   if(e.target.classList.contains("icon")){
     e.dataTransfer.setData("type",e.target.dataset.type);
@@ -225,17 +262,34 @@ function createPlacedIcon(type,num,xPercent,yPercent){
   icon.classList.add("placed", type.toLowerCase());
   icon.dataset.type=type;
   icon.dataset.num =num;
-  icon.textContent =num;
+
+  if(type === "item"){
+    // 背景画像で表示
+    icon.style.backgroundImage = `url('item_images/${num}.png')`;
+    icon.style.backgroundSize = 'contain';
+    icon.style.backgroundRepeat = 'no-repeat';
+    icon.style.backgroundPosition = 'center';
+  }else{
+    // SC/NISC/ItemBox は数字を表示
+    icon.textContent = num;
+  }
+
   setIconPos(icon, xPercent, yPercent);
   icon.addEventListener('mousedown',startDragIcon);
+
   icon.addEventListener('contextmenu',e=>{
     e.preventDefault();
     icon.remove();
-    restoreToPalette(type,num);
+    if (type !== 'item') restoreToPalette(type,num);
     saveState();
   });
+
   return icon;
 }
+
+
+
+
 function setIconPos(el, xp, yp){
   el.style.left = xp + "%";
   el.style.top  = yp + "%";
@@ -273,6 +327,40 @@ function getMapPercentPoint(e) {
     yp: ((e.clientY - rect.top ) / rect.height) * 100
   };
 }
+
+
+/* --- アイテムパレットを作成（既存の #items に追加）--- */
+(function createItemPalette(){
+  const itemList = [
+    {name:'kino1', title:'キノ1'},
+    {name:'kino2', title:'キノ2'},
+    {name:'kino3', title:'キノ3'},
+    {name:'star',  title:'スター'},
+    {name:'Bkino', title:'デカキノ'},
+    {name:'hane',  title:'ハネ'},
+    {name:'Gkino', title:'金キノ'},
+    {name:'IB',    title:'アイテムボックス'} // ← IB.png にリネーム済み
+  ];
+
+  const container = document.getElementById('items');
+  if(!container) return;
+
+  container.innerHTML = '';
+
+  itemList.forEach(it=>{
+    const d = document.createElement('div');
+    d.className = 'icon item';
+    d.dataset.type = 'item';
+    d.dataset.num  = it.name;
+    d.title = it.title;
+    d.style.backgroundImage = `url('item_images/${it.name}.png')`;
+    d.style.backgroundSize = 'contain';
+    d.style.backgroundRepeat = 'no-repeat';
+    d.style.backgroundPosition = 'center';
+    d.setAttribute('draggable','true');
+    container.appendChild(d);
+  });
+})();
 
 
 
@@ -409,6 +497,7 @@ function saveState(){
   }));
   localStorage.setItem(STORAGE_KEY, JSON.stringify({icons,arrows}));
 }
+
 function loadState(){
   const raw = localStorage.getItem(STORAGE_KEY);
   if(!raw) return;
@@ -417,7 +506,10 @@ function loadState(){
     for(const it of (s.icons||[])){
       const el=createPlacedIcon(it.type,it.num,it.xp,it.yp);
       mapInner.appendChild(el);
-      removeFromPalette(it.type,it.num);
+      // ★ Item の場合はパレットから消さない
+      if (it.type !== 'item') {
+        removeFromPalette(it.type,it.num);
+      }
     }
     for(const a of (s.arrows||[])){
       const g=createArrowGroup(a.x1p,a.y1p,a.x2p,a.y2p);
@@ -425,6 +517,9 @@ function loadState(){
     }
   }catch(e){console.warn('loadState parse error',e);}
 }
+
+
+
 document.getElementById('clearBtn').addEventListener('click',()=>{
   [...mapInner.querySelectorAll('.placed')].forEach(el=>el.remove());
   [...arrowLayer.querySelectorAll('.arrow-group')].forEach(g=>g.remove());
