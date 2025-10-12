@@ -6,31 +6,13 @@
   <style>
     body { margin: 0; font-family: sans-serif; background: #f5f5f5; }
 
-    .grid {
-      display: grid;
-      grid-template-rows: auto 1fr;
-      grid-template-columns: 1fr 1fr; /* 左:操作, 右:マップ+パレット */
-      height: 100vh;
-    }
-    header { grid-column: 1 / -1; padding: 16px 20px 0; }
 
-    .controls {
-      grid-row: 2; grid-column: 1;
-      padding: 12px 20px;
-      display: flex; flex-direction: column;
-      gap: 12px;
-      overflow-y: auto;
-    }
-    .viewer {
-      grid-row: 2; grid-column: 2;
-      display: flex; flex-direction: row; /* ← マップとパレットを横並び */
-      background: #fff; border-left: 1px solid #ddd;
-      overflow: hidden;
-    }
-    .viewer iframe {
-      flex: 1; /* マップが右半分の左側に広がる */
-      border: none;
-    }
+
+
+
+
+
+
 
     label { margin-right: 8px; }
     select { margin: 4px; padding: 6px 8px; }
@@ -68,30 +50,103 @@
     }
     .rank-label{ display:flex; align-items:center; font-size:13px; white-space:nowrap; }
     .rank-select{ min-width: 140px; }
+
+
+/* ==== レイアウト全体 ==== */
+.container { display: flex; height: 100vh; /* 横スクロールを許可し、子要素の合計幅に合わせて伸びるようにする */ overflow-x: auto; overflow-y: hidden; min-width: max-content; /* 子要素の幅に合わせてコンテナが広がる（スクロール発生） */ }
+
+
+
+
+/* ==== 左パネル（コース設定） ==== */
+.controls {
+  flex: 0 0 auto;
+  width: 400px;
+  min-width: 250px;
+  max-width: none;
+  background: #fff;
+  border-right: 1px solid #ccc;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  overflow-y: auto;
+  flex-shrink: 0;  /* ← ★これを追加 */
+}
+
+
+/* ==== 中央のドラッグバー ==== */
+#resizer {
+  width: 6px;
+  cursor: col-resize;
+  background: #ccc;
+  transition: background 0.2s;
+
+  z-index: 10000; /* iframeShieldより上でも可 */
+  position: relative;
+
+}
+#resizer:hover {
+  background: #999;
+}
+
+/* ==== 右側のマップエリア ==== */
+
+.viewer { flex: 1; display: flex; background: #f9f9f9; /* 右側が完全に消えないように最低幅を確保（必要に応じ調整） */ min-width: 240px; }
+
+.viewer iframe { flex: 1; border: none; height: 100%; }
+
+
+
+#iframeShield {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: none;
+  background: rgba(0,0,0,0); /* 完全透明 */
+  z-index: 9999;
+}
+
+
+
   </style>
 </head>
-<body>
-  <div class="grid">
-    <header><h1 style="margin:0;">コースルート</h1></header>
 
-    <div class="controls">
+
+
+
+
+<body>
+
+  <!-- ▼ 全体を囲むラッパーを追加 -->
+
+
+
+  <div class="container">
+
+    <!-- ▼ 左側：コース設定パネル -->
+    <div class="controls" id="controls">
+      <header><h1 style="margin:0;">コースルート</h1></header>
+
       <div>
         <label>始点：
           <select id="start"></select>
         </label>
-<button id="swapBtn" title="始点と終点を入れ替え">↔</button>
+        <button id="swapBtn" title="始点と終点を入れ替え">↔</button>
         <label>終点：
           <select id="end"></select>
         </label>
-<button id="exportBtn">データ全出力</button>
-<button id="importBtn">データ読込</button>
-<input type="file" id="importFile" accept="application/json" style="display:none;">
+        <button id="exportBtn">データ全出力</button>
+        <button id="importBtn">データ読込</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
 
-
+        <p style="font-size:12px;color:#555;margin:0 0 8px 0;">
+          終点コースと接続がある始点コースはプルダウン時に青色で表示されます
+        </p>
       </div>
 
       <div class="ranking">
-        <h3>終点コース順位（始点ごとに保存）</h3>
+        <h3>終点コース順位</h3>
         <div id="rankingGrid" class="ranking-grid"></div>
       </div>
 
@@ -100,10 +155,10 @@
         <textarea id="routeMemo"></textarea>
       </div>
 
-<div class="memo">
-  <label for="scMemo">ショートカット解説</label>
-  <textarea id="scMemo"></textarea>
-</div>
+      <div class="memo">
+        <label for="scMemo">ショートカット解説</label>
+        <textarea id="scMemo"></textarea>
+      </div>
 
       <div class="memo">
         <label for="noteMemo">雑感メモ</label>
@@ -111,11 +166,27 @@
       </div>
     </div>
 
+    <!-- ▼ 真ん中：リサイズ用バー -->
+    <div id="resizer"></div>
+
+
+<div id="iframeShield"></div>
+
+
+    <!-- ▼ 右側：マップエディタ -->
     <div class="viewer">
       <iframe id="mapFrame" src="map_editor_fixa.html"></iframe>
-      <!-- パレットは map_editor_fixa.html 内にあるので別枠不要 -->
     </div>
+
   </div>
+
+
+
+
+
+
+
+
 
   <script src="courses.js"></script>
   <script>
@@ -225,6 +296,74 @@ document.getElementById("importFile").addEventListener("change", (e) => {
   };
   reader.readAsText(file);
 });
+
+
+
+function highlightStartsForEnd() {
+  const currentEnd = endEl.value;
+  const currentStart = startEl.value; // 今の選択保持
+
+  // ★まず元の並びにリセット（startsを使う）
+  startEl.innerHTML = "";
+  for (const jp of starts) {
+    const opt = document.createElement("option");
+    opt.value = jp;
+    opt.textContent = jp;
+    startEl.appendChild(opt);
+  }
+
+  // 色リセット
+  [...startEl.options].forEach(opt => opt.style.color = "");
+
+  if (!currentEnd) {
+    // 選択復元だけして終了
+    if ([...startEl.options].some(o => o.value === currentStart)) {
+      startEl.value = currentStart;
+    }
+    return;
+  }
+
+  // この終点につながる始点一覧
+  const connectedStarts = routes.filter(r => r[1] === currentEnd).map(r => r[0]);
+
+  // 色付け
+  [...startEl.options].forEach(opt => {
+    if (connectedStarts.includes(opt.value)) {
+      opt.style.color = "#1DA1F2"; // 明るい水色
+    }
+  });
+
+  // 接続ありを上に持ってくる
+  const options = [...startEl.options];
+  const connectedOpts = options.filter(opt => connectedStarts.includes(opt.value));
+  const otherOpts     = options.filter(opt => !connectedStarts.includes(opt.value));
+
+  startEl.innerHTML = "";
+  connectedOpts.concat(otherOpts).forEach(opt => startEl.appendChild(opt));
+
+  // 選択復元
+  if ([...startEl.options].some(o => o.value === currentStart)) {
+    startEl.value = currentStart;
+  }
+}
+
+
+
+// 終点が切り替わるたびに呼ぶ
+endEl.addEventListener("change", () => {
+  highlightStartsForEnd();
+  updateMap();
+});
+
+// 始点が変わったときにも再反映
+startEl.addEventListener("change", () => {
+  refreshEnds();
+  highlightStartsForEnd();
+});
+
+// 初期化時
+highlightStartsForEnd();
+
 
 
 
@@ -387,6 +526,9 @@ document.getElementById('swapBtn').addEventListener('click', () => {
 
   if (typeof updateMap === 'function')   updateMap();
   if (typeof saveSelection === 'function') saveSelection();
+
+  highlightStartsForEnd();
+
 });
 
 
@@ -398,7 +540,112 @@ document.getElementById('swapBtn').addEventListener('click', () => {
         startEl.value = starts[0];
         refreshEnds();
       }
+
+  highlightStartsForEnd();
+
     }
+
+
+
+
+/* ===== 左右の幅をドラッグで変更する処理（完全保存対応版） ===== */
+const resizer = document.getElementById("resizer");
+const controls = document.getElementById("controls");
+const iframeShield = document.getElementById("iframeShield");
+
+let startX = 0;
+let startWidth = 0;
+let currentRatio = parseFloat(localStorage.getItem("controlsRatio")) || 0.25; // 初期比率: 25%
+
+// --- 比率から幅を反映 ---
+function applyControlsRatio(ratio) {
+  const minPx = 250;
+  const maxPx = Math.max(window.innerWidth - 400, minPx);
+  const widthPx = Math.min(Math.max(window.innerWidth * ratio, minPx), maxPx);
+  controls.style.width = widthPx + "px";
+}
+
+// --- 保存 ---
+function saveControlsRatio() {
+  const ratio = controls.offsetWidth / window.innerWidth;
+  localStorage.setItem("controlsRatio", ratio);
+  currentRatio = ratio;
+}
+
+// --- 復元（ページ読み込み時 or リサイズ時）---
+function restoreControlsWidth() {
+  const savedRatio = parseFloat(localStorage.getItem("controlsRatio"));
+  if (!isNaN(savedRatio)) applyControlsRatio(savedRatio);
+  else applyControlsRatio(currentRatio);
+}
+
+// 初期化時に一度適用
+window.addEventListener("load", restoreControlsWidth);
+
+// --- ドラッグ開始 ---
+resizer.addEventListener("pointerdown", (e) => {
+  e.preventDefault();
+  startX = e.clientX;
+  startWidth = controls.offsetWidth;
+
+  resizer.setPointerCapture(e.pointerId);
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+  iframeShield.style.display = "block";
+});
+
+// --- ドラッグ中 ---
+resizer.addEventListener("pointermove", (e) => {
+  if (!resizer.hasPointerCapture(e.pointerId)) return;
+  const dx = e.clientX - startX;
+  const paletteWidth =  document.querySelector(".palette")?.offsetWidth || 300; // ← 仮
+  const minRight = paletteWidth + 240; // マップ最低幅240 + パレット幅
+  const newWidth = Math.min(
+    Math.max(startWidth + dx, 250),
+    window.innerWidth - minRight
+  );
+  controls.style.width = newWidth + "px";
+});
+
+// --- ドラッグ終了（保存） ---
+resizer.addEventListener("pointerup", (e) => {
+  if (resizer.hasPointerCapture(e.pointerId)) resizer.releasePointerCapture(e.pointerId);
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+  iframeShield.style.display = "none";
+  saveControlsRatio();
+});
+
+// --- 画面サイズ変更時に比率を維持 ---
+window.addEventListener("resize", () => {
+  restoreControlsWidth();
+});
+
+/* --- mapFrameロード完了後に再適用（重要ポイント） --- */
+document.getElementById("mapFrame").addEventListener("load", () => {
+  restoreControlsWidth(); // マップ側レイアウト確定後にもう一度適用
+});
+
+
+/* 親へコンテンツ幅を送る */
+function notifyParentWidth() {
+  const totalWidth =
+    document.querySelector(".container")?.scrollWidth ||
+    document.documentElement.scrollWidth ||
+    document.body.scrollWidth;
+
+  if (window.parent && window.parent !== window) {
+    window.parent.postMessage({ type: "courseIndexWidth", width: totalWidth }, "*");
+  }
+}
+
+window.addEventListener("load", notifyParentWidth);
+setInterval(notifyParentWidth, 1000);
+
+
+
   </script>
+
+
 </body>
 </html>

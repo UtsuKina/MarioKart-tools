@@ -13,22 +13,40 @@
 
   #map-wrap{flex:1;display:flex;flex-direction:row;align-items:stretch;}
 
+
 #map-area {
-  flex:1;
-  position:relative; /* ★追加：zoomDisplay の配置基準にする */
-  background:#fff;
-  overflow:hidden;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  border-right:1px solid #ddd;
-  cursor:grab;
+  flex: 1;
+  position: relative;
+  background: #fff;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+border: 2px solid #000;
 }
+
+
+
+#map-area.capture-border {
+  outline: 3px dashed rgba(0,0,0,0.6);
+  outline-offset: -3px;
+}
+
+
+body {
+  background: #eee;
+}
+
+
+
+
 
   #map-area.dragging{cursor:grabbing;}
 
   #map-inner{
     position:relative;
+  overflow: visible;
     transform-origin:center center;
   }
   #map-inner img{
@@ -38,7 +56,54 @@
   svg.arrow-layer{
     position:absolute; top:0; left:0; width:100%; height:100%;
     pointer-events:auto;
+
+ overflow: visible;
+
   }
+
+
+
+#arrow-layer {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none; /* 矢印自体はクリックを通す */
+}
+
+.arrow-line {
+  position: absolute;
+  height: 3px; /* 線の太さ */
+  transform-origin: 0 50%;
+  pointer-events: auto;
+
+  cursor: move; 
+
+}
+
+.arrow-line::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  width: 6px;
+  height: 6px;
+  border-top: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+}
+
+/* 矢印線の当たり判定を広げる（透明な領域） */
+.arrow-line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 100%;
+  height: 16px;     /* ← クリックできる範囲を広げる。好みに応じて調整（例：20px） */
+  cursor: move;
+}
+
 
 
 #zoomDisplay {
@@ -54,43 +119,97 @@
 }
 
 
+#sidebar { display:flex; flex-direction:column; }
+.sidebar-scroll { flex:1; overflow-y:auto; }
+
+
+
   #sidebar{
     width:220px; border-left:1px solid #ddd; background:#fff; overflow-y:auto;
   }
   #sidebar h3{margin:10px 8px 6px;font-size:13px;color:#444}
+
   .icons{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px 8px;}
-  .icon{
-    width:24px;height:24px;line-height:24px;text-align:center;font-weight:800;
-    font-size:16px;cursor:grab;user-select:none;color:#fff;margin:2px;
-  }
+
+.icon {
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:800;
+  font-size:12px;   /* マップに合わせる */
+  color:#fff;
+  margin:0;         /* 余白を消す */
+  cursor:grab;
+  user-select:none;
+
+
+
+
+}
+
   .sc{border-radius:50%;background:var(--sc-bg);}
   .nisc{border-radius:50%;background:var(--nisc-bg);}
   .itembox{border-radius:6px;background:var(--itembox-bg);}
 
+
 .icon.item {
-  width: 32px;
-  height: 32px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
-}
-.placed.item {
-  width: 32px;
-  height: 32px;
+  width:24px;
+  height:24px;
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
 }
 
+.placed.item {
+  width:24px;
+  height:24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
 
 
 /* マップ上のアイコンを一回り小さくし、中心基準にする */
-.placed{
-  position:absolute;cursor:move;
-  width:24px;height:24px;line-height:24px;text-align:center;font-weight:800;
-  font-size:12px;color:#fff;display:flex;align-items:center;justify-content:center;
-  transform: translate(-50%, -50%);  /* ←中心基準。左/上は%で中心位置を持たせる */
+
+.text-label {
+  position: absolute;
+  min-width: 40px;
+  min-height: 20px;
+  font-size: 14px;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid #ccc;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: move;
+
+
+  white-space: nowrap;
+  outline: none;
+  user-select: text;
+
+
 }
+
+
+.placed {
+  position:absolute;
+  cursor:move;
+  width:24px;
+  height:24px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;    /* ★追加 */
+  line-height:24px;     /* ★追加：高さに合わせる */
+  font-weight:800;
+  font-size:12px;
+  color:#fff;
+  transform: translate(-50%, -50%);
+}
+
+
 
   .placed.sc{background:var(--sc-bg);border-radius:50%;}
   .placed.nisc{background:var(--nisc-bg);border-radius:50%;}
@@ -99,18 +218,58 @@
   #legend{margin:8px;padding:8px;border-top:1px solid #eee;font-size:12px;background:rgba(255,255,255,.9)}
   .hint{font-size:11px;color:#666;margin-top:6px}
 
+
   .arrow-hit{stroke:black; stroke-opacity:0; stroke-width:32;   stroke-linecap:round; pointer-events:stroke;}
-  .arrow-vis{stroke:black; stroke-width:3; pointer-events:none;}
+  .arrow-vis{stroke-width:3; pointer-events:none;}
   .arrow-group{cursor:move;}
   .start-dot{
     position:absolute;width:10px;height:10px;border-radius:50%;
     background:#000;transform:translate(-50%,-50%); pointer-events:none; opacity:.6;
+
+
+
   }
 
-  #clearBtn, #resetZoomBtn{
-    margin:8px; padding:6px 12px; font-size:13px;
-    border:1px solid #888; border-radius:6px; background:#eee; cursor:pointer;
-  }
+
+.hide-icons .placed,
+.hide-icons .text-label,
+.hide-icons .arrow-line {
+  visibility: hidden;   /* ← これで非表示。位置は保持される */
+}
+
+/* 選択中の矢印ボタンを分かりやすくする */
+.arrow-btn.active-arrow {
+  background-color: #ccc;
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.4);
+}
+
+
+
+button { 
+  margin: 4px 2px;  /* ← 8px を 4px にすると間隔が半分になる */
+  padding:6px 12px;
+  font-size:13px;
+  border:1px solid #888;
+  border-radius:6px;
+  background:#eee;
+  cursor:pointer;
+  height:28px;
+  line-height:1;
+}
+
+
+#resizer-map {
+  width: 6px;
+  cursor: col-resize;
+  background: #ccc;
+  transition: background 0.2s;
+}
+#resizer-map:hover {
+  background: #999;
+}
+
+
+
 </style>
 </head>
 <body>
@@ -121,27 +280,73 @@
   <div id="map-area">
     <div id="map-inner">
       <img id="bgimg" src="" alt="map">
-      <svg class="arrow-layer" xmlns="http://www.w3.org/2000/svg"></svg>
+     <div id="arrow-layer"></div>
     </div>
 
 <div id="zoomDisplay">1.0x</div>
 
   </div>
+
+  <div id="resizer-map"></div>
+
   <aside id="sidebar">
+<div class="sidebar-top">
+
+<!-- 既存のボタン群の近くに追加 -->
+<div style="padding:8px;">
+  <div>アイコンサイズ</div>
+  <input type="range" id="iconSizeRange" min="0.5" max="2.0" step="0.1" value="1.0">
+  <span id="iconSizeValue">1.0x</span>
+</div>
+ </div>
+
+  <div class="sidebar-scroll">
+
+
     <h3>SC</h3><div id="sc-icons" class="icons"></div>
     <h3>NISC</h3><div id="nisc-icons" class="icons"></div>
     <h3>ItemBox</h3><div id="item-icons" class="icons"></div>
 
 <h3>Item</h3><div id="items" class="icons"></div>
 
+  </div>
 
-    <button id="clearBtn">全削除</button>
-    <button id="resetZoomBtn">1倍に戻す</button>
+
+  <div class="sidebar-bottom">
+
+<button id="textBtn" draggable="true">T</button>
+
+<button id="blackArrowBtn" title="黒矢印">↗</button>
+<button id="blueArrowBtn" title="青矢印" style="color:blue;">↗</button>
+<button id="redArrowBtn" title="赤矢印" style="color:red;">↗</button>
+
+<button id="resetZoomBtn">1.0x</button>
+
+<button id="fitBtn">最適サイズ</button>
+
+
+<button id="toggleIconsBtn">アイコン非表示</button>
+
+
+<button id="undoBtn">↻</button>
+<button id="redoBtn">↺</button>
+<button id="clearBtn">🗑️全削除</button>
+<button id="exportBtn">💾PNG保存</button>
+
+<button id="replaceItemBoxBtn">ItemBox → IB変換</button>
+
+
     <div id="legend">
-      <div>・同タイプ同番号の重複不可。置くとパレットから消える／右クリックで削除&復帰</div>
-      <div>・マップを2回クリックで矢印。ドラッグで移動／右クリックで削除</div>
-      <div>・ドラッグでマップ移動（パン）／ホイールでズーム（0.5x〜3x）</div>
+      <div>・Tボタンをドラッグ&ドロップで文字入力。ダブルクリックで再編集</div>
+      <div>・右クリックで削除</div>
+      <div>・マップを2回クリックで矢印の始点と終点を決定</div>
+      <div>・ドラッグで移動</div>
+      <div>・ドラッグでマップ移動</div>
+      <div>・ホイールでズーム（0.5x〜3x）</div>
     </div>
+
+ </div>
+
   </aside>
 </div>
 
@@ -153,13 +358,90 @@ const STORAGE_KEY=`map_${START}_${END}`;
 const mapArea=document.getElementById('map-area');
 const mapInner=document.getElementById('map-inner');
 const img=document.getElementById('bgimg');
-const arrowLayer=mapInner.querySelector('svg.arrow-layer');
+
+const arrowLayer=document.getElementById('arrow-layer');
+
 const sidebar=document.getElementById('sidebar');
+
+
+let currentArrowColor = "black"; // デフォルト
+
+// 矢印ボタン一覧（3色）
+const arrowButtons = [
+  {id: "blackArrowBtn", color: "black"},
+  {id: "redArrowBtn",   color: "red"},
+  {id: "blueArrowBtn",  color: "blue"}
+];
+
+// 各ボタンに共通クラスを付与
+arrowButtons.forEach(btn=>{
+  const el = document.getElementById(btn.id);
+  el.classList.add("arrow-btn");
+  el.addEventListener("click", ()=>{
+    currentArrowColor = btn.color;
+
+    // 一度全てリセット
+    arrowButtons.forEach(b=>{
+      document.getElementById(b.id).classList.remove("active-arrow");
+    });
+
+    // 選択中ボタンにハイライト付与
+    el.classList.add("active-arrow");
+  });
+});
+
+// デフォルト（黒矢印）を選択状態に
+document.getElementById("blackArrowBtn").classList.add("active-arrow");
+
+
 
 let zoom=1, panX=0, panY=0; // 表示変換の状態
 let dragTarget=null, offsetX=0, offsetY=0;
 let isDraggingSomething=false;
 let arrowStartPoint=null, startDot=null;
+
+
+// 基準サイズは固定
+const baseIconSizes = {
+  SC: 24,
+  NISC: 24,
+  ItemBox: 24,
+  item: 24
+};
+
+// スライダーで変わる倍率（初期値1.0）
+let iconScale = 1.0;
+
+function applyIconSizesToDOM(){
+  document.querySelectorAll('.placed').forEach(el=>{
+    const t = el.dataset.type;
+    const base = baseIconSizes[t] || 24;
+    const size = Math.round(base * iconScale);
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+  });
+
+  document.querySelectorAll('.icon').forEach(el=>{
+    const t = el.dataset.type;
+    if(!t) return;
+    const base = baseIconSizes[t] || 24;
+    const size = Math.round(base * iconScale);
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+  });
+}
+
+// スライダーのイベントは外で1回だけ
+document.getElementById('iconSizeRange').addEventListener('input', e=>{
+  iconScale = parseFloat(e.target.value);
+  applyIconSizesToDOM();
+  localStorage.setItem(`iconScale_${STORAGE_KEY}`, iconScale); // ←コースごと保存！
+  document.getElementById("iconSizeValue").textContent = iconScale.toFixed(1) + "x";
+});
+
+
+
+
 
 /* パレット初期化 */
 function createPalette(cid,type,cls){
@@ -174,13 +456,35 @@ function createPalette(cid,type,cls){
 createPalette("sc-icons","SC","sc");
 createPalette("nisc-icons","NISC","nisc");
 createPalette("item-icons","ItemBox","itembox");
+
+
+
+
+// ★ここでパレット側にもサイズ補正を適用
+applyIconSizesToDOM();
+
+
+// ページロード時にアイコンサイズ倍率を復元（コースごと）
+const storedScale = localStorage.getItem(`iconScale_${STORAGE_KEY}`);
+if (storedScale) {
+  iconScale = parseFloat(storedScale);
+  document.getElementById("iconSizeRange").value = iconScale;
+  document.getElementById("iconSizeValue").textContent = iconScale.toFixed(1) + "x";
+  applyIconSizesToDOM();
+}
+
+
+
 </script>
 <script src="courses.js"></script>
 <script>
 const bg=(typeof getBackground==="function"?getBackground(START,END):"")||(typeof defaultBackground!=="undefined"?defaultBackground:"");
 if(bg) img.src=bg;
+
+
 </script>
 <script>
+
 /* ===== パン・ズーム管理 ===== */
 function applyTransform(){
   mapInner.style.transform=`translate(${panX}px,${panY}px) scale(${zoom})`;
@@ -215,6 +519,16 @@ document.getElementById('resetZoomBtn').addEventListener('click',()=>{
   zoom=1; panX=0; panY=0; applyTransform();
 });
 
+
+// ウィンドウリサイズ時に全矢印の位置を再計算
+window.addEventListener('resize', ()=>{
+  document.querySelectorAll('.arrow-line').forEach(applyArrowLinePosition);
+});
+
+
+
+
+
 /* ===== D&D（sidebar → map-inner にドロップ） ===== */
 mapArea.addEventListener('dragover', e => e.preventDefault());
 mapArea.addEventListener('drop', e => {
@@ -236,6 +550,12 @@ mapArea.addEventListener('drop', e => {
   const icon=createPlacedIcon(type,num,xp,yp);
   mapInner.appendChild(icon);
 
+
+// ここで即サイズ調整
+applyIconSizesToDOM();
+
+
+
   // ★ Item 以外はパレットから消す
   if (type !== 'item') {
     removeFromPalette(type,num);
@@ -243,6 +563,115 @@ mapArea.addEventListener('drop', e => {
 
   saveState();
 });
+
+
+// ---- テキスト(Tボタン)のドラッグ＆ドロップ ----
+sidebar.addEventListener('dragstart', e=>{
+  if(e.target.id === "textBtn"){
+    e.dataTransfer.setData("type", "text");
+  }
+});
+
+mapArea.addEventListener('drop', e=>{
+  e.preventDefault();
+  const type = e.dataTransfer.getData("type");
+  if(type === "text"){
+    const rect = mapInner.getBoundingClientRect();
+    const xp=((e.clientX-rect.left)/rect.width )*100;
+    const yp=((e.clientY-rect.top )/rect.height)*100;
+
+const label = createTextLabel("", xp, yp, "#000", true);
+
+
+
+    saveState();
+    return;
+  }
+  // 既存のアイコン処理はそのまま残す
+});
+
+
+
+
+let iconsHidden = false;
+const toggleBtn = document.getElementById("toggleIconsBtn");
+
+toggleBtn.addEventListener("click", ()=>{
+  iconsHidden = !iconsHidden;
+
+  if(iconsHidden){
+    mapInner.classList.add("hide-icons");
+  }else{
+    mapInner.classList.remove("hide-icons");
+  }
+
+  toggleBtn.textContent = iconsHidden ? "アイコン表示" : "アイコン非表示";
+});
+
+
+
+
+
+
+
+// アンドゥ/リドゥ
+let history = [], historyIndex = -1;
+
+
+
+
+
+document.getElementById("undoBtn").addEventListener("click", ()=>{
+  if(historyIndex>0){
+    historyIndex--;
+    loadStateFromString(history[historyIndex]);
+    localStorage.setItem(STORAGE_KEY, history[historyIndex]); // ← これ追加
+  }
+});
+document.getElementById("redoBtn").addEventListener("click", ()=>{
+  if(historyIndex < history.length-1){
+    historyIndex++;
+    loadStateFromString(history[historyIndex]);
+    localStorage.setItem(STORAGE_KEY, history[historyIndex]); // ← これ追加
+  }
+});
+
+
+
+
+
+
+// 最適サイズボタン
+let fitZoom = 1;
+img.addEventListener('load', ()=>{
+  const areaRect = mapArea.getBoundingClientRect();
+  fitZoom = Math.min(areaRect.width / img.naturalWidth, areaRect.height / img.naturalHeight);
+});
+document.getElementById("fitBtn").addEventListener("click", ()=>{
+  zoom = fitZoom * 0.95;
+  panX=0; panY=0;
+  applyTransform();
+});
+
+
+
+
+
+
+// PNG出力
+document.getElementById("exportBtn").addEventListener("click", ()=>{
+  const prevBorder = mapArea.style.border;
+  mapArea.style.border = "none";  // 一時的に消す
+  html2canvas(mapArea, {useCORS:true, backgroundColor:null}).then(canvas=>{
+    const a = document.createElement("a");
+    a.href = canvas.toDataURL("image/png");
+    a.download = "map.png";
+    a.click();
+  }).finally(()=>{
+    mapArea.style.border = prevBorder; // 元に戻す
+  });
+});
+
 
 
 
@@ -264,13 +693,11 @@ function createPlacedIcon(type,num,xPercent,yPercent){
   icon.dataset.num =num;
 
   if(type === "item"){
-    // 背景画像で表示
     icon.style.backgroundImage = `url('item_images/${num}.png')`;
     icon.style.backgroundSize = 'contain';
     icon.style.backgroundRepeat = 'no-repeat';
     icon.style.backgroundPosition = 'center';
   }else{
-    // SC/NISC/ItemBox は数字を表示
     icon.textContent = num;
   }
 
@@ -284,8 +711,160 @@ function createPlacedIcon(type,num,xPercent,yPercent){
     saveState();
   });
 
+  // ★ ここでサイズを現在の scale に合わせる
+  applyIconSizesToDOM();
+
   return icon;
 }
+
+
+/* ===== 統一：保存／復元（undo/redo + localStorage） ===== */
+
+
+function saveState(){
+  const state = {
+    icons: [...mapInner.querySelectorAll('.placed')].map(el=>({
+      type: el.dataset.type,
+      num: el.dataset.num,
+      xp: +el.dataset.xp,
+      yp: +el.dataset.yp
+    })),
+
+
+
+arrowLines: [...document.querySelectorAll('.arrow-line')].map(d => ({
+  x1p:+d.dataset.x1p, y1p:+d.dataset.y1p,
+  x2p:+d.dataset.x2p, y2p:+d.dataset.y2p,
+  color:d.style.backgroundColor
+})),
+
+
+
+
+texts: [...mapInner.querySelectorAll('.text-label')].map(el=>({
+  xp:+el.dataset.xp,   // ← dataset の % を必ず使う
+  yp:+el.dataset.yp,
+  html: el.innerHTML   // ← innerText → innerHTML
+})),
+
+
+
+  };
+
+  const s = JSON.stringify(state);
+
+  // 直前の履歴と同じなら重複 push しない（無駄な履歴増加防止）
+  if(historyIndex >= 0 && history[historyIndex] === s) {
+    localStorage.setItem(STORAGE_KEY, s);
+    return;
+  }
+
+  history = history.slice(0, historyIndex+1);
+  history.push(s);
+  historyIndex++;
+  // 現在状態は localStorage にも入れておく（ページ再読み込み時の復元用）
+  localStorage.setItem(STORAGE_KEY, s);
+}
+
+/* loadStateFromString: 履歴文字列から復元（undo/redo 用に使う） */
+function loadStateFromString(stateStr){
+  // 既存の配置を消す
+  [...mapInner.querySelectorAll('.placed')].forEach(el=>el.remove());
+
+[...document.querySelectorAll('.arrow-line')].forEach(g=>g.remove());
+
+
+  [...mapInner.querySelectorAll('.text-label')].forEach(t=>t.remove());
+
+  if(!stateStr) return;
+  try{
+    const s = JSON.parse(stateStr);
+
+    for(const it of (s.icons||[])){
+      const el = createPlacedIcon(it.type, it.num, it.xp, it.yp);
+      mapInner.appendChild(el);
+      if (it.type !== 'item') removeFromPalette(it.type, it.num);
+    }
+
+for(const a of (s.arrowLines || s.arrows || [])){
+  createArrowLine(a.x1p, a.y1p, a.x2p, a.y2p, a.color || "black");
+}
+
+
+for(const t of (s.texts||[])){
+  const div = createTextLabel("", t.xp, t.yp); // 位置だけ指定して作成
+  div.innerHTML = t.html || "";                // ← 保存時に innerHTML を持たせたので復元
+}
+
+
+
+
+  }catch(e){
+    console.warn("loadStateFromString parse error", e);
+  }
+}
+
+/* loadState: ページ読み込み時の localStorage からの復元 + history 初期化 */
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  history = []; historyIndex = -1;
+
+  if(!raw) return;
+  try{
+    const s = JSON.parse(raw);
+
+    // 既存をクリア（念のため）
+    [...mapInner.querySelectorAll('.placed')].forEach(el=>el.remove());
+[...document.querySelectorAll('.arrow-line')].forEach(g=>g.remove());
+
+    [...mapInner.querySelectorAll('.text-label')].forEach(t=>t.remove());
+
+    for(const it of (s.icons||[])){
+      const el = createPlacedIcon(it.type, it.num, it.xp, it.yp);
+      mapInner.appendChild(el);
+      if (it.type !== 'item') removeFromPalette(it.type, it.num);
+    }
+
+   for(const a of (s.arrowLines || s.arrows || [])){
+  createArrowLine(a.x1p, a.y1p, a.x2p, a.y2p, a.color || "black");
+}
+
+
+for(const t of (s.texts||[])){
+  const div = createTextLabel("", t.xp, t.yp); // 位置だけ指定して作成
+  div.innerHTML = t.html || "";                // ← 保存時に innerHTML を持たせたので復元
+}
+
+
+
+    // アイコンサイズが保存されていれば復元
+if(s.iconScale !== undefined){
+  iconScale = s.iconScale;
+  document.getElementById("iconSizeRange").value = iconScale;
+  document.getElementById("iconSizeValue").textContent = iconScale.toFixed(1) + "x";
+
+}
+applyIconSizesToDOM();
+
+
+
+
+
+    // history 初期化（undo の基点）
+const stateStr = JSON.stringify({
+  icons: s.icons || [],
+  arrowLines: s.arrowLines || s.arrows || [],
+  texts: s.texts || []
+});
+
+    history = [stateStr];
+    historyIndex = 0;
+
+  }catch(e){
+    console.warn('loadState parse error', e);
+  }
+}
+
 
 
 
@@ -336,10 +915,15 @@ function getMapPercentPoint(e) {
     {name:'kino2', title:'キノ2'},
     {name:'kino3', title:'キノ3'},
     {name:'star',  title:'スター'},
-    {name:'Bkino', title:'デカキノ'},
-    {name:'hane',  title:'ハネ'},
     {name:'Gkino', title:'金キノ'},
-    {name:'IB',    title:'アイテムボックス'} // ← IB.png にリネーム済み
+    {name:'killer',title:'キラー'},   // ← killer.png
+    {name:'hane',  title:'ハネ'},
+    {name:'thunder', title:'サンダー'},
+    {name:'IB',    title:'アイテムボックス'}, // ← IB.png にリネーム済み
+　　{name:'DoubleIB',    title:'ダブルアイテムボックス'},
+    {name:'food',  title:'フード'}   // ← food.png
+
+
   ];
 
   const container = document.getElementById('items');
@@ -363,6 +947,86 @@ function getMapPercentPoint(e) {
 })();
 
 
+/* ===== テキスト入力機能 ===== */
+mapArea.addEventListener("dblclick", e => {
+  if(e.target.closest("#sidebar")) return; // サイドバー上は無視
+  if(e.target.closest(".placed") || e.target.closest(".text-label")) return; // アイコンや既存ラベルは無視
+
+  const {xp, yp} = getMapPercentPoint(e);
+    createTextLabel("テキスト", xp, yp);
+  saveState();
+});
+
+
+
+
+function createTextLabel(text, xPercent, yPercent, color="#000", autoFocus=false) {
+  const div = document.createElement("div");
+  div.className = "text-label";
+  div.textContent = text || "";
+  div.dataset.xp = +xPercent;
+  div.dataset.yp = +yPercent;
+  div.style.color = color;
+
+  // 初期位置
+  setIconPos(div, +xPercent, +yPercent);
+
+  // 移動
+  div.addEventListener("mousedown", e => {
+    if (e.button !== 0) return;
+    dragTarget = div;
+    isDraggingSomething = true;
+    const rect = dragTarget.getBoundingClientRect();
+    offsetX = e.clientX - rect.left;
+    offsetY = e.clientY - rect.top;
+    document.addEventListener("mousemove", onDragIcon);
+    document.addEventListener("mouseup", endDragIcon);
+  });
+
+  // 右クリックで削除
+  div.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    div.remove();
+    saveState();
+  });
+
+  // ダブルクリックで編集再開
+  div.addEventListener("dblclick", e => {
+    e.stopPropagation();
+    div.contentEditable = true;
+    div.focus();
+  });
+
+  // Enterで確定、Shift+Enterは改行
+  div.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      div.contentEditable = false;
+      div.blur();
+      saveState();
+    }
+  });
+
+  // フォーカス外れたら確定
+  div.addEventListener("blur", () => {
+    if (div.isContentEditable) {
+      div.contentEditable = false;
+      saveState();
+    }
+  });
+
+  mapInner.appendChild(div);
+
+  // ★ 新規作成の時だけオートフォーカス
+  if(autoFocus){
+    div.contentEditable = true;
+    setTimeout(() => div.focus(), 0);
+  }
+
+  return div;
+}
+
+
 
 
 /* ===== 矢印管理 ===== */
@@ -381,8 +1045,10 @@ mapArea.addEventListener('click', e=>{
     startDot.style.left=xp+"%"; startDot.style.top=yp+"%";
     mapInner.appendChild(startDot);
   }else{
-    const g = createArrowGroup(arrowStartPoint.xp, arrowStartPoint.yp, xp, yp);
-    arrowLayer.appendChild(g);
+
+   createArrowLine(arrowStartPoint.xp, arrowStartPoint.yp, xp, yp);
+
+
     arrowStartPoint=null;
     if(startDot){ startDot.remove(); startDot=null; }
     saveState();
@@ -392,87 +1058,105 @@ mapArea.addEventListener('click', e=>{
 
 
 
-function ensureArrowMarker(){
-  if(arrowLayer.querySelector("#arrowhead")) return;
-  const defs=document.createElementNS("http://www.w3.org/2000/svg","defs");
-  const marker=document.createElementNS("http://www.w3.org/2000/svg","marker");
-  marker.setAttribute("id","arrowhead");
-marker.setAttribute("markerWidth","8");
-marker.setAttribute("markerHeight","5");
-marker.setAttribute("refX","6"); // ★8→6 に変更（棒が2px短くなる）
-marker.setAttribute("refY","2.5");
 
-  marker.setAttribute("orient","auto");
-  const path=document.createElementNS("http://www.w3.org/2000/svg","path");
-path.setAttribute("d","M0,0 L8,2.5 L0,5 Z");
-  path.setAttribute("fill","black");
-  marker.appendChild(path);
-  defs.appendChild(marker);
-  arrowLayer.appendChild(defs);
-}
-ensureArrowMarker();
-function createArrowGroup(x1p,y1p,x2p,y2p){
-  const g=document.createElementNS("http://www.w3.org/2000/svg","g");
-  g.classList.add("arrow-group");
-  g.dataset.x1p=x1p; g.dataset.y1p=y1p; g.dataset.x2p=x2p; g.dataset.y2p=y2p;
-  const hit=document.createElementNS("http://www.w3.org/2000/svg","line");
-  hit.setAttribute("class","arrow-hit");
-  const vis=document.createElementNS("http://www.w3.org/2000/svg","line");
-  vis.setAttribute("class","arrow-vis");
-  vis.setAttribute("marker-end","url(#arrowhead)");
-  g.appendChild(hit); g.appendChild(vis);
-  applyArrowPixelPositions(g);
-  g.addEventListener("contextmenu",e=>{e.preventDefault(); g.remove(); saveState();});
-  let dragging=false, prev=null;
-  g.addEventListener("mousedown",e=>{
-if (e.button !== 0) return; // ★左クリック以外は無視
-    dragging=true; prev=getRelPercentPoint(e);
-    e.preventDefault(); isDraggingSomething=true;
+
+
+
+function createArrowLine(x1p, y1p, x2p, y2p, color = currentArrowColor) {
+  const div = document.createElement("div");
+  div.className = "arrow-line";
+  div.style.backgroundColor = color;
+  div.style.color = color;
+  div.dataset.x1p = x1p;
+  div.dataset.y1p = y1p;
+  div.dataset.x2p = x2p;
+  div.dataset.y2p = y2p;
+
+  applyArrowLinePosition(div);
+
+  // 右クリックで削除
+  div.addEventListener("contextmenu", e => {
+    e.preventDefault();
+    div.remove();
+    saveState();
   });
-  document.addEventListener("mousemove",e=>{
-    if(!dragging) return;
-    const p=getRelPercentPoint(e);
-    const dx = p.x - prev.x, dy = p.y - prev.y;
-    g.dataset.x1p = (+g.dataset.x1p) + dx;
-    g.dataset.y1p = (+g.dataset.y1p) + dy;
-    g.dataset.x2p = (+g.dataset.x2p) + dx;
-    g.dataset.y2p = (+g.dataset.y2p) + dy;
+
+  // ▼ 左クリックドラッグで矢印全体を移動
+  let dragging = false;
+  let prev = null;
+
+  div.addEventListener("mousedown", e => {
+    if (e.button !== 0) return; // 左クリックのみ
+    dragging = true;
+    isDraggingSomething = true;
+    prev = getRelPercentPoint(e);
+    e.preventDefault();
+  });
+
+  document.addEventListener("mousemove", e => {
+    if (!dragging) return;
+    const p = getRelPercentPoint(e);
+    const dx = p.x - prev.x;
+    const dy = p.y - prev.y;
+
+    // dataset座標を更新
+    div.dataset.x1p = +div.dataset.x1p + dx;
+    div.dataset.y1p = +div.dataset.y1p + dy;
+    div.dataset.x2p = +div.dataset.x2p + dx;
+    div.dataset.y2p = +div.dataset.y2p + dy;
+
     prev = p;
-    applyArrowPixelPositions(g);
+    applyArrowLinePosition(div);
   });
-  document.addEventListener("mouseup",()=>{
-    if(dragging){ dragging=false; setTimeout(()=>{ isDraggingSomething=false; saveState(); },50); }
+
+  document.addEventListener("mouseup", () => {
+    if (dragging) {
+      dragging = false;
+      setTimeout(() => {
+        isDraggingSomething = false;
+        saveState();
+      }, 50);
+    }
   });
-  return g;
+
+  document.getElementById("arrow-layer").appendChild(div);
+  return div;
 }
+
+
+function applyArrowLinePosition(div) {
+  const baseW = mapInner.clientWidth;
+  const baseH = mapInner.clientHeight;
+
+  const x1 = (div.dataset.x1p / 100) * baseW;
+  const y1 = (div.dataset.y1p / 100) * baseH;
+  const x2 = (div.dataset.x2p / 100) * baseW;
+  const y2 = (div.dataset.y2p / 100) * baseH;
+
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+  div.style.left = x1 + "px";
+  div.style.top = y1 + "px";
+  div.style.width = len + "px";
+  div.style.transform = `rotate(${angle}deg)`;
+}
+
+
+
+
+
 function getRelPercentPoint(e){
  const rect = mapInner.getBoundingClientRect(); // ★修正
   return { x: ((e.clientX - rect.left) / rect.width ) * 100,
            y: ((e.clientY - rect.top  ) / rect.height) * 100 };
 }
 
-function applyArrowPixelPositions(g){
-  // ★ポイント：変形後の rect ではなく「レイアウト寸法」を使う
-  const baseW = mapInner.clientWidth;   // ← zoom/pan の影響を受けない幅
-  const baseH = mapInner.clientHeight;  // ← 同上
-
-  const x1 = (+g.dataset.x1p) * baseW / 100;
-  const y1 = (+g.dataset.y1p) * baseH / 100;
-  const x2 = (+g.dataset.x2p) * baseW / 100;
-  const y2 = (+g.dataset.y2p) * baseH / 100;
-
-  const [hit, vis] = g.querySelectorAll('line');
-  [hit,vis].forEach(el=>{
-    el.setAttribute("x1", x1);
-    el.setAttribute("y1", y1);
-    el.setAttribute("x2", x2);
-    el.setAttribute("y2", y2);
-  });
-}
 
 
 
-window.addEventListener('resize', ()=>{document.querySelectorAll('.arrow-group').forEach(applyArrowPixelPositions);});
 
 /* ===== パレット表示制御 ===== */
 function removeFromPalette(type,num){
@@ -487,64 +1171,42 @@ function restoreAllPalette(){
   sidebar.querySelectorAll('.icon').forEach(el=>el.style.visibility="visible");
 }
 
-/* ===== 保存／復元 ===== */
-function saveState(){
-  const icons = [...mapInner.querySelectorAll('.placed')].map(el=>({
-    type: el.dataset.type, num:el.dataset.num, xp:+el.dataset.xp, yp:+el.dataset.yp
-  }));
-  const arrows = [...arrowLayer.querySelectorAll('.arrow-group')].map(g=>({
-    x1p:+g.dataset.x1p,y1p:+g.dataset.y1p,x2p:+g.dataset.x2p,y2p:+g.dataset.y2p
-  }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({icons,arrows}));
-}
 
-function loadState(){
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if(!raw) return;
-  try{
-    const s=JSON.parse(raw);
-    for(const it of (s.icons||[])){
-      const el=createPlacedIcon(it.type,it.num,it.xp,it.yp);
-      mapInner.appendChild(el);
-      // ★ Item の場合はパレットから消さない
-      if (it.type !== 'item') {
-        removeFromPalette(it.type,it.num);
-      }
-    }
-    for(const a of (s.arrows||[])){
-      const g=createArrowGroup(a.x1p,a.y1p,a.x2p,a.y2p);
-      arrowLayer.appendChild(g);
-    }
-  }catch(e){console.warn('loadState parse error',e);}
-}
+
+
+
 
 
 
 document.getElementById('clearBtn').addEventListener('click',()=>{
   [...mapInner.querySelectorAll('.placed')].forEach(el=>el.remove());
-  [...arrowLayer.querySelectorAll('.arrow-group')].forEach(g=>g.remove());
+[...document.querySelectorAll('.arrow-line')].forEach(g=>g.remove());
+  [...mapInner.querySelectorAll('.text-label')].forEach(el=>el.remove()); 
   restoreAllPalette();
   localStorage.removeItem(STORAGE_KEY);
 });
 
 
 img.addEventListener('load', ()=>{
-  const areaRect = mapArea.getBoundingClientRect();
   const iw = img.naturalWidth;
   const ih = img.naturalHeight;
 
-  // 最大フィット倍率を計算
-  const fitZoom = Math.min(areaRect.width / iw, areaRect.height / ih);
-  // 少しだけ縮小して余白を作る
-  zoom = fitZoom * 0.95;
+// 矢印レイヤーを画像と同じ大きさに固定（div の style を使う）
+arrowLayer.style.width  = iw + "px";
+arrowLayer.style.height = ih + "px";
 
-  // パンは中央寄せ不要、0でOK（mapInnerがflex中央なので）
+
+  // 最大フィット倍率を計算
+  const areaRect = mapArea.getBoundingClientRect();
+  const fitZoom = Math.min(areaRect.width / iw, areaRect.height / ih);
+
+  zoom = fitZoom * 0.95;
   panX = 0;
   panY = 0;
 
   applyTransform();
   loadState();
-  document.querySelectorAll('.arrow-group').forEach(applyArrowPixelPositions);
+
 });
 
 
@@ -554,6 +1216,65 @@ sidebar.addEventListener('dragstart',e=>{
     e.dataTransfer.setData('num',  e.target.dataset.num);
   }
 });
+
+
+/* ===== ItemBox → IB置き換えボタン ===== */
+document.getElementById("replaceItemBoxBtn").addEventListener("click", ()=>{
+  const boxes = [...mapInner.querySelectorAll('.placed.itembox')];
+  if (!boxes.length) return;
+
+  // 履歴に保存（Undo対応）
+  saveState();
+
+  boxes.forEach(box => {
+    const xp = +box.dataset.xp;
+    const yp = +box.dataset.yp;
+    const num = box.dataset.num;
+
+    // IBアイコン生成
+    const ib = createPlacedIcon("item", "IB", xp, yp);
+    mapInner.appendChild(ib);
+
+    restoreToPalette("ItemBox", num);
+    box.remove();
+  });
+
+  // 更新後の状態も履歴に記録
+  saveState();
+});
+
+
+
+const resizerMap = document.getElementById("resizer-map");
+let startX2 = 0, startWidth2 = 0;
+resizerMap.addEventListener("pointerdown", e => {
+  e.preventDefault();
+  startX2 = e.clientX;
+  startWidth2 = sidebar.offsetWidth;
+  resizerMap.setPointerCapture(e.pointerId);
+  document.body.style.cursor = "col-resize";
+});
+resizerMap.addEventListener("pointermove", e => {
+  if (!resizerMap.hasPointerCapture(e.pointerId)) return;
+  const dx = startX2 - e.clientX;
+  const newW = Math.min(Math.max(startWidth2 + dx, 150), 400);
+  sidebar.style.width = newW + "px";
+});
+resizerMap.addEventListener("pointerup", e => {
+  if (resizerMap.hasPointerCapture(e.pointerId))
+    resizerMap.releasePointerCapture(e.pointerId);
+  document.body.style.cursor = "";
+  localStorage.setItem("mapSidebarWidth", sidebar.offsetWidth);
+});
+// 再読み込み時に幅復元
+const savedSidebarWidth = localStorage.getItem("mapSidebarWidth");
+if (savedSidebarWidth) sidebar.style.width = savedSidebarWidth + "px";
+
+
 </script>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
+
 </body>
 </html>

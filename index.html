@@ -10,37 +10,71 @@ html, body {
   height: 100%;
 }
 html {
-    overflow-x: auto;   /* 横スクロールは許可 */
-  overflow-y: hidden; /* 縦スクロールは禁止 */
+  overflow-x: auto;   /* 横スクロール許可 */
+  overflow-y: hidden; /* 縦スクロール禁止 */
 }
 body {
   font-family: sans-serif;
   display: flex;
 }
+
+/* ==== サイドバー（メニュー） ==== */
 nav {
   width: 220px;
   background: #333;
   color: #fff;
-  padding: 20px;
+  padding: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease;
+}
+
+/* 折り畳み時 */
+nav.collapsed {
+  width: 50px;
+}
+nav.collapsed h2,
+nav.collapsed ul li {
+  display: none;
+}
+
+/* ☰ボタン */
+#toggleMenuBtn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 16px;
+  text-align: left;
+  width: 100%;
   box-sizing: border-box;
 }
+#toggleMenuBtn:hover {
+  background: #444;
+}
+
 nav h2 {
-  font-size: 1.2em;
-  margin-bottom: 10px;
+  font-size: 1.1em;
+  margin: 12px 16px 8px;
 }
 nav ul {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
 nav ul li {
   margin: 10px 0;
   cursor: pointer;
-  padding: 5px;
+  padding: 6px 16px;
   border-radius: 4px;
 }
 nav ul li:hover {
   background: #444;
 }
+
+/* ==== メインコンテンツ ==== */
 #content {
   flex: 1;
   height: 100%;
@@ -51,18 +85,18 @@ iframe {
   border: none;
   display: block;
 }
-
-
   </style>
 </head>
 <body>
-  <nav>
+
+  <nav id="sidebar">
+    <!-- ☰ボタンをサイドバーの最上部に配置 -->
+    <button id="toggleMenuBtn">☰</button>
+
     <h2>メニュー</h2>
     <ul>
-<li onclick="loadPage('course_index.html')">コースルート</li>
-<li onclick="loadPage('custom_builder.html')">カスタムビルダー</li>
-
-
+      <li onclick="loadPage('course_index.html')">コースルート</li>
+      <li onclick="loadPage('custom_builder.html')">カスタムビルダー</li>
     </ul>
   </nav>
 
@@ -71,9 +105,101 @@ iframe {
   </div>
 
   <script>
+    // ページ読み込み処理
     function loadPage(page) {
       document.getElementById("viewer").src = page;
+      localStorage.setItem("lastPage", page);
     }
+
+    // 前回のページを復元
+    window.addEventListener("load", ()=>{
+      const last = localStorage.getItem("lastPage");
+      if (last) document.getElementById("viewer").src = last;
+    });
+
+    // ☰ボタンでサイドバーを開閉
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggleMenuBtn');
+    toggleBtn.addEventListener('click', ()=>{
+      sidebar.classList.toggle('collapsed');
+    });
+
+
+window.addEventListener('message', e => {
+  try {
+    const d = e.data;
+    if (d && d.type === 'courseIndexWidth') {
+      const iframe = document.getElementById('viewer');
+      const content = document.getElementById('content');
+      const max = window.innerWidth * 3;
+      const reportedWidth = Math.min(d.width || iframe.clientWidth, max);
+      const containerWidth = content.clientWidth;
+
+      // ★ 保存された幅を考慮
+      const savedW = localStorage.getItem("controlsWidth");
+      const adjust = savedW ? parseInt(savedW) - 400 : 0;
+
+      if (reportedWidth <= containerWidth + 10) {
+        iframe.style.width = '100%';
+      } else {
+        iframe.style.width = (reportedWidth + adjust) + 'px';
+      }
+
+      content.style.overflowX = 'auto';
+    }
+  } catch (err) {
+    console.warn('message handling error', err);
+  }
+});
+
+
+
+// ====== ブラウザサイズやサイドバー変更時にiframe幅を再調整 ======
+function adjustIframeWidth() {
+  const iframe = document.getElementById('viewer');
+  const content = document.getElementById('content');
+  if (!iframe || !content) return;
+
+  // iframeの実幅がコンテナより大きければ、収まるように調整
+  const contentWidth = content.clientWidth;
+  const iframeWidth = iframe.clientWidth;
+
+  if (iframeWidth > contentWidth) {
+    iframe.style.width = contentWidth + 'px';
+  }
+}
+
+// ブラウザリサイズ時に自動調整
+window.addEventListener('resize', adjustIframeWidth);
+
+// ☰メニューの開閉でも再調整（トグル直後に少し遅らせて実行）
+toggleBtn.addEventListener('click', () => {
+  setTimeout(adjustIframeWidth, 300); // アニメーション後に走らせる
+});
+
+
+if (d && d.type === 'courseIndexWidth') {
+  const iframe = document.getElementById('viewer');
+  const content = document.getElementById('content');
+  const max = window.innerWidth * 3;
+  const reportedWidth = Math.min(d.width || iframe.clientWidth, max);
+  const containerWidth = content.clientWidth;
+
+  const savedW = localStorage.getItem("controlsWidth");
+  const adjust = savedW ? parseInt(savedW) - 400 : 0; // controls分調整
+
+  if (reportedWidth <= containerWidth + 10) {
+    iframe.style.width = '100%';
+  } else {
+    iframe.style.width = (reportedWidth + adjust) + 'px'; // ← 保存幅考慮
+  }
+
+  content.style.overflowX = 'auto';
+}
+
+
+
   </script>
+
 </body>
 </html>
